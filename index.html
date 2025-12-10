@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>テトリスゲーム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <h1>テトリスゲーム</h1>
+        <div id="game-info">
+            スコア: <span id="score">0</span>
+            <div id="next-block-area">
+                <h3>NEXT</h3>
+                <canvas id="nextCanvas" width="80" height="80"></canvas>
+            </div>
+        </div>
+        
+        <canvas id="gameCanvas" width="200" height="400"></canvas>
+        
+        <p>← → ↓ キーで移動、↑ キーで回転</p>
+        <button id="start-button">ゲームスタート</button>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
