@@ -1,0 +1,31 @@
+/* ... (body, #game-container, #score-boardなどはそのまま) ... */
+
+#game-container {
+    display: flex; /* 情報とキャンバスを横に並べる */
+    max-width: 650px;
+    margin: 0 auto;
+    /* ... (他の設定はそのまま) ... */
+}
+
+#game-info {
+    padding: 0 20px;
+    text-align: left;
+}
+
+/* メインのゲーム盤 */
+#gameCanvas {
+    width: 200px;  /* 10マス */
+    height: 400px; /* 20マス */
+    background-color: #000;
+    border: 5px solid #333;
+    margin-right: 20px;
+}
+
+/* 次のブロック表示エリア */
+#nextCanvas {
+    background-color: #111;
+    border: 1px solid #555;
+
+}
+
+/* ... (スタートボタンなどはそのまま) ... */
