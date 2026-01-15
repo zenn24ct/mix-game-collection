@@ -6,20 +6,21 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>blockgame01(2026 01)</title>
     <style>
+        /* *は全てに適用するセレクタ */
         * {
-            box-sizing: border-box;
+            box-sizing: border-box; /* 要素の幅と高さに境界線とパディングを含める */
+
+            /* 以下の2つはデフォルトの余白を全部消すため */
             margin: 0;
             padding: 0
         }
 
         body {
-            font-family: Arial, sans-serif;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            background: #f3f4f6
+            padding: 10px;
         }
 
         .wrap {
@@ -36,11 +37,11 @@
         canvas {
             display: block;
             border: 3px solid #667eea;
-            border-radius: 8px;
-            background: #fff;
-            margin: 0 auto
+            border-radius: 8px; /* 角を丸くする */
+            margin: 0 auto /* 中央寄せ */
         }
 
+        /* スコアとボタンを横並びにする */
         .info {
             display: flex;
             justify-content: space-between;
@@ -55,7 +56,7 @@
         }
 
         button {
-            padding: 8px 14px;
+            padding: 8px 14px; /* 8と14は上下と左右の余白 */
             border-radius: 8px;
             border: none;
             cursor: pointer;
@@ -76,7 +77,7 @@
 
 <body>
     <div class="wrap">
-        <h1>2026年1個目のブロック崩し（エフェクト付き）</h1>
+        <h1>2026年1個目のブロック崩し</h1>
         <canvas id="c" width="480" height="600"></canvas>
         <div class="info">
             <div>スコア: <span id="score">0</span></div>
@@ -89,43 +90,76 @@
 
     <script>
         (function () {
-            // --- DOM ---
+            // 各機能を取得するところ
             const canvas = document.getElementById('c');
             const ctx = canvas.getContext('2d');
             const scoreEl = document.getElementById('score');
             const startBtn = document.getElementById('start');
             const resetBtn = document.getElementById('reset');
 
-            // --- State ---
+            // --- 状態変数 ---
             let score = 0;
-            let gameRunning = false;
-            let animationId = null;
+            let gameRunning = false; // ゲームが進行中かどうか
+            let animationId = null; //アニメーションフレームのIDで停止時に使う
 
             // --- Paddle ---
-            const paddle = { x: canvas.width / 2 - 40, y: canvas.height - 30, width: 80, height: 10, speed: 7, dx: 0 };
+            const paddle = { 
+                x: canvas.width / 2 - 40, 
+                y: canvas.height - 30, 
+                width: 80, 
+                height: 10, 
+                speed: 7,
+                dx: 0 // 現在の水平速度
+            };
 
             // --- Ball (with trail) ---
-            const ball = { x: canvas.width / 2, y: canvas.height / 2, radius: 6, dx: 3, dy: -3, trail: [] };
+            const ball = { 
+                x: canvas.width / 2, 
+                y: canvas.height / 2, 
+                radius: 6, 
+                dx: 3, 
+                dy: -3, 
+                trail: [] // 軌跡の位置を保存する配列
+            };
 
-            // --- Particles ---
+            //破片のエフェクトを格納する配列
             let particles = []; // {x,y,vx,vy,color,life}
 
             // --- Bricks config ---
-            const brickRows = 8, brickCols = 8, brickPadding = 5, brickOffsetTop = 40, brickOffsetLeft = 10;
+            const brickRows = 8, 
+            brickCols = 8, 
+            brickPadding = 5, 
+            brickOffsetTop = 40, 
+            brickOffsetLeft = 10;
             let brickWidth = Math.floor((canvas.width - brickOffsetLeft * 2 - (brickCols - 1) * brickPadding) / brickCols);
-            const brickHeight = 20;
-            let bricks = [];
+            const brickHeight = 20; //ブロックの高さは固定
+            let bricks = []; //ブロックを格納する2次元配列
 
-            // --- Init bricks ---
+            /* ここでは、ブロックの初期化を行う関数を定義している。
+               各ブロックには位置（x, y）、状態（status）、および色（color）が設定される。 */
             function initBricks() {
-                bricks = [];
-                const colors = ['#e74c3c', '#e67e22', '#f39c12', '#27ae60', '#4bb7ff', '#d381f4', '#ff7ffd', '#ff3e6b'];
+                bricks = []; //ここで初期化
+                const colors = 
+                ['#e74c3c', 
+                '#e67e22', 
+                '#f39c12', 
+                '#27ae60', 
+                '#4bb7ff', 
+                '#d381f4', 
+                '#ff7ffd', 
+                '#ff3e6b'];
+                /* 2次元配列としてブロックを初期化するループ */
                 for (let r = 0; r < brickRows; r++) {
                     bricks[r] = [];
                     for (let c = 0; c < brickCols; c++) {
+                        /* 各ブロックの位置と状態を設定 */
                         bricks[r][c] = {
+                            /* xとyはブロックの位置を計算して設定している。
+                               statusは1で、これはブロックが存在することを示す。
+                               colorは行番号に基づいてcolors配列から取得され、各行に異なる色が割り当てられる。 */
                             x: brickOffsetLeft + c * (brickWidth + brickPadding),
                             y: brickOffsetTop + r * (brickHeight + brickPadding),
+                            // ステータス（1=存在、0=破壊済み）
                             status: 1,
                             color: colors[r] || '#999'
                         };
@@ -133,7 +167,7 @@
                 }
             }
 
-            // --- Particles: creation, update, draw ---
+            /* ここでは、パーティクルを生成する関数を定義している。*/
             function createParticles(x, y, color, count = 12) {
                 for (let i = 0; i < count; i++) {
                     particles.push({
@@ -146,7 +180,7 @@
                     });
                 }
             }
-
+            /*ここでは、パーティクルの位置と寿命を更新する関数を定義している。*/
             function updateParticles() {
                 particles = particles.filter(p => {
                     p.x += p.vx;
@@ -157,7 +191,7 @@
                     return p.life > 0;
                 });
             }
-
+            /* ここでは、パーティクルを描画する関数を定義している。*/
             function drawParticles() {
                 for (const p of particles) {
                     ctx.globalAlpha = Math.max(0, p.life);
@@ -167,12 +201,14 @@
                 ctx.globalAlpha = 1;
             }
 
-            // --- Draw functions (including ball trail) ---
+            /* ここでは、パドルを描画する関数を定義している。*/            
             function drawPaddle() {
                 ctx.fillStyle = '#667eea';
                 ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
             }
 
+            /* ここでは、ボールとその軌跡を描画する関数を定義している。
+               ボールの現在位置に加えて、過去の位置を保存したtrail配列を使用して軌跡効果を描画している。 */
             function drawBall() {
                 // add current position to trail
                 ball.trail.push({ x: ball.x, y: ball.y });
@@ -198,6 +234,9 @@
                 ctx.closePath();
             }
 
+            /* ここでは、ブロックを描画する関数を定義している。
+               各ブロックはその位置（x, y）とサイズ（brickWidth, brickHeight）に基づいて描画される。
+               ブロックの色はそのcolorプロパティに基づいて設定され、枠線も描画される。 */
             function drawBricks() {
                 for (let r = 0; r < brickRows; r++) {
                     for (let c = 0; c < brickCols; c++) {
@@ -212,13 +251,18 @@
                 }
             }
 
-            // --- Movement & collisions ---
+            /* ここでは、パドルの移動を更新する関数を定義している。
+               パドルの位置はその速度（dx）に基づいて更新され、キャンバスの境界内に制限される。 */
             function movePaddle() {
                 paddle.x += paddle.dx;
                 if (paddle.x < 0) paddle.x = 0;
                 if (paddle.x + paddle.width > canvas.width) paddle.x = canvas.width - paddle.width;
             }
 
+            /* ここでは、ボールの移動と衝突検出を更新する関数を定義している。
+               ボールの位置はその速度（dx, dy）に基づいて更新され、キャンバスの境界、パドル、およびブロックとの衝突が検出される。
+               衝突が発生した場合、ボールの速度が反転し、スコアが更新され、必要に応じてパーティクルが生成される。
+               ボールがキャンバスの下端を超えた場合、ゲームオーバーとなり、ゲームがリセットされる。 */
             function moveBall() {
                 ball.x += ball.dx;
                 ball.y += ball.dy;
@@ -364,7 +408,7 @@
             startBtn.addEventListener('click', startGame);
             resetBtn.addEventListener('click', resetGame);
 
-            // --- Init ---
+            
             initBricks();
             draw();
 
